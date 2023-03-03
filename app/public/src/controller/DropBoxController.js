@@ -1,5 +1,6 @@
 class DropBoxController {
   constructor() {
+
     this.btnSendFileEl = document.querySelector("#btn-send-file");
     this.inputFilesEl = document.querySelector("#files");
     this.snackModalEl = document.querySelector("#react-snackbar-root");
@@ -13,7 +14,7 @@ class DropBoxController {
   }
 
   connectFireBase() {
-    
+
     const firebaseConfig = {
       apiKey: "AIzaSyBvKcWd8Zl9SWMAIKITV3FrPdyqZBY70vQ",
       authDomain: "dropbox-clone-98da2.firebaseapp.com",
@@ -26,7 +27,7 @@ class DropBoxController {
     };
 
     // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
   }
 
   initEvents() {
@@ -35,7 +36,17 @@ class DropBoxController {
     });
 
     this.inputFilesEl.addEventListener("change", (event) => {
-      this.uploadTask(event.target.files);
+      this.uploadTask(event.target.files).then(responses => {
+
+        responses.forEach(resp => {
+
+          console.log(resp);
+
+        });
+
+        this.modalShow(false);
+
+      });
 
       this.modalShow();
 
@@ -52,40 +63,37 @@ class DropBoxController {
     let promises = [];
 
     [...files].forEach((file) => {
-      promises.push(
-        new Promise((resolve, reject) => {
-          let ajax = new XMLHttpRequest();
+      promises.push(new Promise((resolve, reject) => {
+        let ajax = new XMLHttpRequest();
 
-          ajax.open("POST", "/upload");
+        ajax.open("POST", "/upload");
 
-          ajax.onload = (event) => {
-            this.modalShow(false);
+        ajax.onload = event => {
 
-            try {
-              resolve(JSON.parse(ajax.responseText));
-            } catch (e) {
-              reject(e);
-            }
-          };
+          try {
+            resolve(JSON.parse(ajax.responseText));
+          } catch (e) {
+            reject(e);
+          }
+        };
 
-          ajax.onerror = (event) => {
-            this.modalShow(false);
+        ajax.onerror = (event) => {
 
-            reject(event);
-          };
+          reject(event);
+        };
 
-          ajax.upload.onprogress = (event) => {
-            this.uploaddProgress(event, file);
-          };
+        ajax.upload.onprogress = (event) => {
+          this.uploaddProgress(event, file);
+        };
 
-          let formData = new FormData();
+        let formData = new FormData();
 
-          formData.append("input-file", file);
+        formData.append("input-file", file);
 
-          this.startUploadTime = Date.now();
+        this.startUploadTime = Date.now();
 
-          ajax.send(formData);
-        })
+        ajax.send(formData);
+      })
       );
     });
 
