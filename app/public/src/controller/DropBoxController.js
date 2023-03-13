@@ -49,94 +49,95 @@ class DropBoxController {
     this.getSelection().forEach(li => {
 
       let file = JSON.parse(li.dataset.file);
+      let key = li.dataset.key
 
       let formData = new FormData();
 
-      formData.append('path', file.path);
-      formData.append('key', file.key);
-      
+      formData.append('path', file.filepath);
+      formData.append('key', key);
+
 
       promises.push(this.ajax("/file", 'DELETE', formData));
 
-      return Promise.all(promises)
     })
+
+    return Promise.all(promises)
+
   }
 
   initEvents() {
+    this.btnDelete.addEventListener("click", (e) => {
+      this.removeTask()
+        .then((responses) => {
 
-    this.btnDelete.addEventListener('click', e => {
-      this.removeTask().then(responses => {
+          responses.forEach(response => {
+            if (response.fields.key) {
+              this.getFirebaseRef().child
+              (response.fields.key).remove();
+            }
+          })
 
-        console.log('responses');
+          console.log("responses");
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
 
-      }).catch(err => [
-        console.error(err)
-      ])
-    })
-
-    this.btnRename.addEventListener('click', e => {
+    this.btnRename.addEventListener("click", (e) => {
       let li = this.getSelection()[0];
       let file = JSON.parse(li.dataset.file);
-      let name = prompt("Renomear o arquivo: ", file.originalFilename);
+
+      let name = prompt("Renomar o arquivo:", file.name);
 
       if (name) {
-        console.log(name)
-        console.log(file.originalFilename)
-        file.originalFilename = name;
-        this.getFirebaseRef().child(li.dataset.key).set(file)
+        file.name = name;
+
+        this.getFirebaseRef().child(li.dataset.key).set(file);
       }
+    });
 
-    })
-
-    this.listFilesEl.addEventListener('selectionchange', e => {
-
+    this.listFilesEl.addEventListener("selectionchange", (e) => {
       switch (this.getSelection().length) {
-
         case 0:
-          this.btnDelete.style.display = 'none'
-          this.btnRename.style.display = 'none'
+          this.btnDelete.style.display = "none";
+          this.btnRename.style.display = "none";
           break;
 
         case 1:
-          this.btnDelete.style.display = 'block'
-          this.btnRename.style.display = 'block'
+          this.btnDelete.style.display = "block";
+          this.btnRename.style.display = "block";
           break;
 
         default:
-          this.btnDelete.style.display = 'block'
-          this.btnRename.style.display = 'none'
-
+          this.btnDelete.style.display = "block";
+          this.btnRename.style.display = "none";
       }
-    })
+    });
+
     this.btnSendFileEl.addEventListener("click", (event) => {
       this.inputFilesEl.click();
     });
 
     this.inputFilesEl.addEventListener("change", (event) => {
-
       this.btnSendFileEl.disabled = true;
+      this.uploadTask(event.target.files)
+        .then((responses) => {
+          responses.forEach((resp) => {
+            this.getFirebaseRef().push().set(resp.files["input-file"]);
+          });
 
-      this.uploadTask(event.target.files).then(responses => {
-
-        responses.forEach(resp => {
-
-          this.getFirebaseRef().push().set(resp.files['input-file'])
-
+          this.uploadComplete();
+        })
+        .catch((err) => {
+          this.uploadComplete();
+          console.error(err);
         });
 
-        this.uploadComplete();
-
-      }).catch(err => {
-
-        this.uploadComplete();
-        console.error(err);
-
-      })
-
       this.modalShow();
-
     });
   }
+
 
   uploadComplete() {
     this.modalShow(false);
